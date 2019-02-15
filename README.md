@@ -1,0 +1,2 @@
+# PureECSSample
+Unity Pure ECSのサンプルゲーム。
