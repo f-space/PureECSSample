@@ -15,22 +15,9 @@ public class BallMotionSystem : ComponentSystem
 	{
 		Game game = GetSingleton<Game>();
 
-		ArchetypeChunkComponentType<Position> positionType = GetArchetypeChunkComponentType<Position>();
-		ArchetypeChunkComponentType<Velocity> velocityType = GetArchetypeChunkComponentType<Velocity>(true);
-
-		using (NativeArray<ArchetypeChunk> chunks = this.group.CreateArchetypeChunkArray(Allocator.TempJob))
+		this.ForEach((in Game context, ref Position position, ref Velocity velocity) =>
 		{
-			foreach (ArchetypeChunk chunk in chunks)
-			{
-				NativeArray<Position> positions = chunk.GetNativeArray(positionType);
-				NativeArray<Velocity> velocities = chunk.GetNativeArray(velocityType);
-				for (int i = 0; i < positions.Length; i++)
-				{
-					Position position = positions[i];
-					position.Y += velocities[i].Y * game.ElapsedTime;
-					positions[i] = position;
-				}
-			}
-		}
+			position.Y += velocity.Y * context.ElapsedTime;
+		}, game, this.group);
 	}
 }

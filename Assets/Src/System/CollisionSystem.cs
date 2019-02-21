@@ -18,31 +18,18 @@ public class CollisionSystem : ComponentSystem
 		Position playerPosition = EntityManager.GetComponentData<Position>(player);
 		Size playerSize = EntityManager.GetComponentData<Size>(player);
 
-		ArchetypeChunkEntityType entityType = GetArchetypeChunkEntityType();
-		ArchetypeChunkComponentType<Position> positionType = GetArchetypeChunkComponentType<Position>();
-		ArchetypeChunkComponentType<Size> sizeType = GetArchetypeChunkComponentType<Size>();
+		(ComponentSystem, Game game, Position, Size) context = (this, game, playerPosition, playerSize);
 
-		using (NativeArray<ArchetypeChunk> chunks = this.group.CreateArchetypeChunkArray(Allocator.TempJob))
+		this.ForEach((ref (ComponentSystem @this, Game game, Position, Size) ctx, Entity entity, ref Position position, ref Size size) =>
 		{
-			foreach (ArchetypeChunk chunk in chunks)
+			(_, _, Position pPos, Size pSize) = ctx;
+			if (position.X == pPos.X && position.Y - size.Height / 2f < pPos.Y + pSize.Height / 2f)
 			{
-				NativeArray<Entity> entities = chunk.GetNativeArray(entityType);
-				NativeArray<Position> positions = chunk.GetNativeArray(positionType);
-				NativeArray<Size> sizes = chunk.GetNativeArray(sizeType);
-
-				for (int i = 0; i < entities.Length; i++)
-				{
-					Position position = positions[i];
-					Size size = sizes[i];
-					if (position.X == playerPosition.X && position.Y - size.Height / 2f < playerPosition.Y + playerSize.Height / 2f)
-					{
-						game.Score += 1;
-						PostUpdateCommands.DestroyEntity(entities[i]);
-					}
-				}
+				ctx.game.Score += 1;
+				ctx.@this.PostUpdateCommands.DestroyEntity(entity);
 			}
-		}
+		}, ref context, this.group);
 
-		SetSingleton<Game>(game);
+		SetSingleton<Game>(context.game);
 	}
 }

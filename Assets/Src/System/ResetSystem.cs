@@ -15,23 +15,10 @@ public class ResetSystem : ComponentSystem
 
 	protected override void OnUpdate()
 	{
-		ArchetypeChunkComponentType<GameStateChangedEvent> eventType = GetArchetypeChunkComponentType<GameStateChangedEvent>(true);
-
-		using (NativeArray<ArchetypeChunk> chunks = this.eventGroup.CreateArchetypeChunkArray(Allocator.TempJob))
+		this.ForEach((in ResetSystem @this, ref GameStateChangedEvent ev) =>
 		{
-			foreach (ArchetypeChunk chunk in chunks)
-			{
-				NativeArray<GameStateChangedEvent> events = chunk.GetNativeArray(eventType);
-				foreach (GameStateChangedEvent ev in events)
-				{
-					if (ev.NextState == GameState.Ready)
-					{
-						Reset();
-						return;
-					}
-				}
-			}
-		}
+			if (ev.NextState == GameState.Ready) @this.Reset();
+		}, this, this.eventGroup);
 	}
 
 	private void Reset()

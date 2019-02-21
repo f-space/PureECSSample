@@ -13,25 +13,13 @@ public class GameStateSystem : ComponentSystem
 
 	protected override void OnUpdate()
 	{
-		ArchetypeChunkEntityType entityType = GetArchetypeChunkEntityType();
-		ArchetypeChunkComponentType<GameStateChangedEvent> eventType = GetArchetypeChunkComponentType<GameStateChangedEvent>(true);
-
-		using (NativeArray<ArchetypeChunk> chunks = this.group.CreateArchetypeChunkArray(Allocator.TempJob))
+		this.ForEach((in ComponentSystem @this, Entity entity, ref GameStateChangedEvent ev) =>
 		{
-			foreach (ArchetypeChunk chunk in chunks)
-			{
-				NativeArray<Entity> entities = chunk.GetNativeArray(entityType);
-				NativeArray<GameStateChangedEvent> events = chunk.GetNativeArray(eventType);
-				
-				foreach (GameStateChangedEvent ev in events)
-				{
-					Game game = GetSingleton<Game>();
-					game.State = ev.NextState;
-					SetSingleton<Game>(game);
-				}
+			Game game = @this.GetSingleton<Game>();
+			game.State = ev.NextState;
+			@this.SetSingleton<Game>(game);
 
-				EntityManager.DestroyEntity(entities);
-			}
-		}
+			@this.PostUpdateCommands.DestroyEntity(entity);
+		}, this, this.group);
 	}
 }

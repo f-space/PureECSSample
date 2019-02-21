@@ -14,23 +14,13 @@ public class GameOverSystem : ComponentSystem
 
 	protected override void OnUpdate()
 	{
-		ArchetypeChunkComponentType<Position> positionType = GetArchetypeChunkComponentType<Position>(true);
-
-		using (NativeArray<ArchetypeChunk> chunks = this.group.CreateArchetypeChunkArray(Allocator.TempJob))
+		this.ForEach((in EntityManager manager, ref Position position) =>
 		{
-			foreach (ArchetypeChunk chunk in chunks)
+			if (position.Y < 0f)
 			{
-				NativeArray<Position> positions = chunk.GetNativeArray(positionType);
-				foreach (Position position in positions)
-				{
-					if (position.Y < 0f)
-					{
-						Entity entity = EntityManager.CreateEntity(System.Array.Empty<ComponentType>());
-						EntityManager.AddComponentData(entity, new GameStateChangedEvent { NextState = GameState.GameOver });
-						return;
-					}
-				}
+				Entity entity = manager.CreateEntity(System.Array.Empty<ComponentType>());
+				manager.AddComponentData(entity, new GameStateChangedEvent { NextState = GameState.GameOver });
 			}
-		}
+		}, EntityManager, this.group);
 	}
 }
