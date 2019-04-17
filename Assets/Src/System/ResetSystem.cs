@@ -1,16 +1,18 @@
 using Unity.Collections;
 using Unity.Entities;
 
-[UpdateInGroup(typeof(EventHandlingGroup))]
+[UpdateInGroup(typeof(EventHandlingSystemGroup))]
 public class ResetSystem : ComponentSystem
 {
-	private ComponentGroup eventGroup;
-	private ComponentGroup ballGroup;
+	private EntityQuery eventQuery;
+	private EntityQuery ballQuery;
 
-	protected override void OnCreateManager()
+	protected override void OnCreate()
 	{
-		this.eventGroup = GetComponentGroup(ComponentType.ReadOnly<GameStateChangedEvent>());
-		this.ballGroup = GetComponentGroup(ComponentType.Create<Ball>());
+		this.eventQuery = GetEntityQuery(ComponentType.ReadOnly<GameStateChangedEvent>());
+		this.ballQuery = GetEntityQuery(ComponentType.ReadOnly<Ball>());
+
+		RequireForUpdate(this.eventQuery);
 	}
 
 	protected override void OnUpdate()
@@ -18,7 +20,7 @@ public class ResetSystem : ComponentSystem
 		this.ForEach((in ResetSystem @this, ref GameStateChangedEvent ev) =>
 		{
 			if (ev.NextState == GameState.Ready) @this.Reset();
-		}, this, this.eventGroup);
+		}, this, this.eventQuery);
 	}
 
 	private void Reset()
@@ -33,6 +35,6 @@ public class ResetSystem : ComponentSystem
 		generator.NextTime = 0f;
 		SetSingleton<BallGenerator>(generator);
 
-		EntityManager.DestroyEntity(this.ballGroup);
+		EntityManager.DestroyEntity(this.ballQuery);
 	}
 }

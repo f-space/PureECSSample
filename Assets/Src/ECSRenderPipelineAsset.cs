@@ -1,12 +1,11 @@
 using Unity.Entities;
 using UnityEngine;
 using UnityEngine.Rendering;
-using UnityEngine.Experimental.Rendering;
 
 [CreateAssetMenu(menuName = nameof(ECSRenderPipeline))]
 public class ECSRenderPipelineAsset : RenderPipelineAsset
 {
-	protected override IRenderPipeline InternalCreatePipeline()
+	protected override RenderPipeline CreatePipeline()
 	{
 		return new ECSRenderPipeline();
 	}
@@ -29,7 +28,7 @@ class ECSRenderPipeline : RenderPipeline
 
 	private CommandBuffer commands = new CommandBuffer();
 
-	public override void Render(ScriptableRenderContext context, Camera[] cameras)
+	protected override void Render(ScriptableRenderContext context, Camera[] cameras)
 	{
 		CalculateProjection(out Matrix4x4 projection);
 		CalculateViewportRect(out Rect viewport);
@@ -43,7 +42,7 @@ class ECSRenderPipeline : RenderPipeline
 		World world = World.Active;
 		if (world != null)
 		{
-			RenderSystem system = world.GetExistingManager<RenderSystem>();
+			RenderSystem system = world.GetExistingSystem<RenderSystem>();
 
 			foreach (RenderRequest request in system.RenderQueue)
 			{

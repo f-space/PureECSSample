@@ -1,35 +1,66 @@
 using Unity.Collections;
 using Unity.Entities;
 
-[UpdateInGroup(typeof(CollisionGroup))]
+[UpdateInGroup(typeof(InteractionSystemGroup))]
 public class CollisionSystem : ComponentSystem
 {
-	private ComponentGroup group;
-
-	protected override void OnCreateManager()
+	private struct Context
 	{
-		this.group = GetComponentGroup(ComponentType.ReadOnly<Ball>(), ComponentType.ReadOnly<Position>(), ComponentType.ReadOnly<Size>());
+		public ComponentSystem System;
+		public Game Game;
+		public Position PlayerPosition;
+		public Size PlayerSize;
+		public bool GameOver;
+	}
+
+	private EntityQuery query;
+
+	protected override void OnCreate()
+	{
+		this.query = GetEntityQuery(new EntityQueryDesc
+		{
+			All = new[] { ComponentType.ReadOnly<Ball>(), ComponentType.ReadOnly<Position>(), ComponentType.ReadOnly<Size>() },
+			None = new[] { ComponentType.ReadWrite<Frozen>() },
+		});
 	}
 
 	protected override void OnUpdate()
 	{
 		Game game = GetSingleton<Game>();
-		Entity player = GetSingleton<Singleton>().Player;
+		Entity player = GetSingletonEntity<Player>();
 		Position playerPosition = EntityManager.GetComponentData<Position>(player);
 		Size playerSize = EntityManager.GetComponentData<Size>(player);
 
-		(ComponentSystem, Game game, Position, Size) context = (this, game, playerPosition, playerSize);
-
-		this.ForEach((ref (ComponentSystem @this, Game game, Position, Size) ctx, Entity entity, ref Position position, ref Size size) =>
+		Context context = new Context
 		{
-			(_, _, Position pPos, Size pSize) = ctx;
+			System = this,
+			Game = game,
+			PlayerPosition = playerPosition,
+			PlayerSize = playerSize,
+			GameOver = false,
+		};
+
+		this.ForEach((ref Context ctx, Entity entity, ref Position position, ref Size size) =>
+		{
+			Position pPos = ctx.PlayerPosition;
+			Size pSize = ctx.PlayerSize;
 			if (position.X == pPos.X && position.Y - size.Height / 2f < pPos.Y + pSize.Height / 2f)
 			{
-				ctx.game.Score += 1;
-				ctx.@this.PostUpdateCommands.DestroyEntity(entity);
+				ctx.Game.Score += 1;
+				ctx.System.PostUpdateCommands.DestroyEntity(entity);
 			}
-		}, ref context, this.group);
+			else if (position.Y < 0f)
+			{
+				ctx.GameOver = true;
+			}
+		}, ref context, this.query);
 
-		SetSingleton<Game>(context.game);
+		if (context.GameOver)
+		{
+			Entity entity = EntityManager.CreateEntity();
+			EntityManager.AddComponentData(entity, new GameStateChangedEvent { NextState = GameState.GameOver });
+		}
+
+		SetSingleton<Game>(context.Game);
 	}
 }

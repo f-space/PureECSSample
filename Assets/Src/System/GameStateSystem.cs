@@ -1,14 +1,14 @@
 using Unity.Collections;
 using Unity.Entities;
 
-[UpdateAfter(typeof(EventHandlingGroup))]
+[UpdateInGroup(typeof(InitializationSystemGroup))]
 public class GameStateSystem : ComponentSystem
 {
-	private ComponentGroup group;
+	private EntityQuery query;
 
-	protected override void OnCreateManager()
+	protected override void OnCreate()
 	{
-		this.group = GetComponentGroup(ComponentType.Create<GameStateChangedEvent>());
+		this.query = GetEntityQuery(typeof(GameStateChangedEvent));
 	}
 
 	protected override void OnUpdate()
@@ -20,6 +20,6 @@ public class GameStateSystem : ComponentSystem
 			@this.SetSingleton<Game>(game);
 
 			@this.PostUpdateCommands.DestroyEntity(entity);
-		}, this, this.group);
+		}, this, this.query);
 	}
 }

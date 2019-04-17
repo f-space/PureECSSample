@@ -1,12 +1,16 @@
 using Unity.Entities;
 
-public class UpdateGroup { }
+[UpdateInGroup(typeof(SimulationSystemGroup))]
+[UpdateBefore(typeof(UpdateSystemGroup))]
+public class InputHandlingSystemGroup : ComponentSystemGroup { }
 
-[UpdateAfter(typeof(UpdateGroup))]
-public class CollisionGroup { }
+[UpdateInGroup(typeof(SimulationSystemGroup))]
+public class UpdateSystemGroup : ComponentSystemGroup { }
 
-[UpdateAfter(typeof(CollisionGroup))]
-public class EventHandlingGroup { }
+[UpdateInGroup(typeof(SimulationSystemGroup))]
+[UpdateAfter(typeof(UpdateSystemGroup))]
+public class InteractionSystemGroup : ComponentSystemGroup { }
 
-[UpdateAfter(typeof(EventHandlingGroup))]
-public class RenderGroup { }
+[UpdateInGroup(typeof(SimulationSystemGroup))]
+[UpdateAfter(typeof(InteractionSystemGroup))]
+public class EventHandlingSystemGroup : ComponentSystemGroup { }

@@ -7,12 +7,12 @@ public static class ComponentSystemExtensions
 	public delegate void F_RD<R, T0>(in R context, ref T0 c0)
 		where T0 : struct, IComponentData;
 
-	public static unsafe void ForEach<R, T0>(this ComponentSystem @this, F_RD<R, T0> operate, in R context, ComponentGroup group)
+	public static unsafe void ForEach<R, T0>(this ComponentSystem @this, F_RD<R, T0> operate, in R context, EntityQuery query)
 		where T0 : struct, IComponentData
 	{
 		ArchetypeChunkComponentType<T0> chunkComponentType0 = @this.GetArchetypeChunkComponentType<T0>(false);
 
-		using (NativeArray<ArchetypeChunk> chunks = group.CreateArchetypeChunkArray(Allocator.TempJob))
+		using (NativeArray<ArchetypeChunk> chunks = query.CreateArchetypeChunkArray(Allocator.TempJob))
 		{
 			foreach (ArchetypeChunk chunk in chunks)
 			{
@@ -30,13 +30,13 @@ public static class ComponentSystemExtensions
 	public delegate void F_RED<R, T0>(in R context, Entity entity, ref T0 c0)
 		where T0 : struct, IComponentData;
 
-	public static unsafe void ForEach<R, T0>(this ComponentSystem @this, F_RED<R, T0> operate, in R context, ComponentGroup group)
+	public static unsafe void ForEach<R, T0>(this ComponentSystem @this, F_RED<R, T0> operate, in R context, EntityQuery query)
 		where T0 : struct, IComponentData
 	{
 		ArchetypeChunkEntityType entityType = @this.GetArchetypeChunkEntityType();
 		ArchetypeChunkComponentType<T0> chunkComponentType0 = @this.GetArchetypeChunkComponentType<T0>(false);
 
-		using (NativeArray<ArchetypeChunk> chunks = group.CreateArchetypeChunkArray(Allocator.TempJob))
+		using (NativeArray<ArchetypeChunk> chunks = query.CreateArchetypeChunkArray(Allocator.TempJob))
 		{
 			foreach (ArchetypeChunk chunk in chunks)
 			{
@@ -56,14 +56,14 @@ public static class ComponentSystemExtensions
 		where T0 : struct, IComponentData
 		where T1 : struct, IComponentData;
 
-	public static unsafe void ForEach<R, T0, T1>(this ComponentSystem @this, F_RDD<R, T0, T1> operate, in R context, ComponentGroup group)
+	public static unsafe void ForEach<R, T0, T1>(this ComponentSystem @this, F_RDD<R, T0, T1> operate, in R context, EntityQuery query)
 		where T0 : struct, IComponentData
 		where T1 : struct, IComponentData
 	{
 		ArchetypeChunkComponentType<T0> chunkComponentType0 = @this.GetArchetypeChunkComponentType<T0>(false);
 		ArchetypeChunkComponentType<T1> chunkComponentType1 = @this.GetArchetypeChunkComponentType<T1>(false);
 
-		using (NativeArray<ArchetypeChunk> chunks = group.CreateArchetypeChunkArray(Allocator.TempJob))
+		using (NativeArray<ArchetypeChunk> chunks = query.CreateArchetypeChunkArray(Allocator.TempJob))
 		{
 			foreach (ArchetypeChunk chunk in chunks)
 			{
@@ -84,7 +84,7 @@ public static class ComponentSystemExtensions
 		where T0 : struct, IComponentData
 		where T1 : struct, IComponentData;
 
-	public static unsafe void ForEach<W, T0, T1>(this ComponentSystem @this, F_WEDD<W, T0, T1> operate, ref W context, ComponentGroup group)
+	public static unsafe void ForEach<W, T0, T1>(this ComponentSystem @this, F_WEDD<W, T0, T1> operate, ref W context, EntityQuery query)
 		where T0 : struct, IComponentData
 		where T1 : struct, IComponentData
 	{
@@ -92,7 +92,7 @@ public static class ComponentSystemExtensions
 		ArchetypeChunkComponentType<T0> chunkComponentType0 = @this.GetArchetypeChunkComponentType<T0>(false);
 		ArchetypeChunkComponentType<T1> chunkComponentType1 = @this.GetArchetypeChunkComponentType<T1>(false);
 
-		using (NativeArray<ArchetypeChunk> chunks = group.CreateArchetypeChunkArray(Allocator.TempJob))
+		using (NativeArray<ArchetypeChunk> chunks = query.CreateArchetypeChunkArray(Allocator.TempJob))
 		{
 			foreach (ArchetypeChunk chunk in chunks)
 			{

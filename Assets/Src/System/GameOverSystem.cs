@@ -1,26 +1,33 @@
 using Unity.Collections;
 using Unity.Entities;
 
-[UpdateInGroup(typeof(CollisionGroup))]
-[UpdateAfter(typeof(CollisionSystem))]
+[UpdateInGroup(typeof(EventHandlingSystemGroup))]
 public class GameOverSystem : ComponentSystem
 {
-	private ComponentGroup group;
+	private EntityQuery eventQuery;
 
-	protected override void OnCreateManager()
+	private EntityQuery ballQuery;
+
+	protected override void OnCreate()
 	{
-		this.group = GetComponentGroup(ComponentType.ReadOnly<Ball>(), ComponentType.ReadOnly<Position>());
+		this.eventQuery = GetEntityQuery(ComponentType.ReadOnly<GameStateChangedEvent>());
+		this.ballQuery = GetEntityQuery(new EntityQueryDesc
+		{
+			All = new[] { ComponentType.ReadOnly<Ball>() },
+			None = new[] { ComponentType.ReadWrite<Frozen>() },
+		});
+
+		RequireForUpdate(this.eventQuery);
 	}
 
 	protected override void OnUpdate()
 	{
-		this.ForEach((in EntityManager manager, ref Position position) =>
+		this.ForEach((in EntityManager manager, ref GameStateChangedEvent ev) =>
 		{
-			if (position.Y < 0f)
+			if (ev.NextState == GameState.GameOver)
 			{
-				Entity entity = manager.CreateEntity(System.Array.Empty<ComponentType>());
-				manager.AddComponentData(entity, new GameStateChangedEvent { NextState = GameState.GameOver });
+				manager.AddComponent(this.ballQuery, typeof(Frozen));
 			}
-		}, EntityManager, this.group);
+		}, EntityManager, this.eventQuery);
 	}
 }

@@ -1,14 +1,18 @@
 using Unity.Collections;
 using Unity.Entities;
 
-[UpdateInGroup(typeof(UpdateGroup))]
+[UpdateInGroup(typeof(UpdateSystemGroup))]
 public class BallMotionSystem : ComponentSystem
 {
-	private ComponentGroup group;
+	private EntityQuery query;
 
-	protected override void OnCreateManager()
+	protected override void OnCreate()
 	{
-		this.group = GetComponentGroup(ComponentType.ReadOnly<Ball>(), ComponentType.ReadOnly<Velocity>(), ComponentType.Create<Position>());
+		this.query = GetEntityQuery(new EntityQueryDesc
+		{
+			All = new[] { ComponentType.ReadOnly<Ball>(), ComponentType.ReadWrite<Position>(), ComponentType.ReadOnly<Velocity>() },
+			None = new[] { ComponentType.ReadWrite<Frozen>() },
+		});
 	}
 
 	protected override void OnUpdate()
@@ -18,6 +22,6 @@ public class BallMotionSystem : ComponentSystem
 		this.ForEach((in Game context, ref Position position, ref Velocity velocity) =>
 		{
 			position.Y += velocity.Y * context.ElapsedTime;
-		}, game, this.group);
+		}, game, this.query);
 	}
 }
