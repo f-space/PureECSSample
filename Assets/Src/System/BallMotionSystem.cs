@@ -1,14 +1,18 @@
 using Unity.Collections;
 using Unity.Entities;
 
-[UpdateInGroup(typeof(UpdateGroup))]
+[UpdateInGroup(typeof(UpdateSystemGroup))]
 public class BallMotionSystem : ComponentSystem
 {
-	private ComponentGroup group;
+	private EntityQuery query;
 
-	protected override void OnCreateManager()
+	protected override void OnCreate()
 	{
-		this.group = GetComponentGroup(ComponentType.ReadOnly<Ball>(), ComponentType.ReadOnly<Velocity>(), ComponentType.Create<Position>());
+		this.query = GetEntityQuery(new EntityQueryDesc
+		{
+			All = new[] { ComponentType.ReadOnly<Ball>(), ComponentType.ReadWrite<Position>(), ComponentType.ReadOnly<Velocity>() },
+			None = new[] { ComponentType.ReadWrite<Frozen>() },
+		});
 	}
 
 	protected override void OnUpdate()
@@ -18,7 +22,7 @@ public class BallMotionSystem : ComponentSystem
 		ArchetypeChunkComponentType<Position> positionType = GetArchetypeChunkComponentType<Position>();
 		ArchetypeChunkComponentType<Velocity> velocityType = GetArchetypeChunkComponentType<Velocity>(true);
 
-		using (NativeArray<ArchetypeChunk> chunks = this.group.CreateArchetypeChunkArray(Allocator.TempJob))
+		using (NativeArray<ArchetypeChunk> chunks = this.query.CreateArchetypeChunkArray(Allocator.TempJob))
 		{
 			foreach (ArchetypeChunk chunk in chunks)
 			{

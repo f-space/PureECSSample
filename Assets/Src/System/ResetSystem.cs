@@ -1,34 +1,30 @@
 using Unity.Collections;
 using Unity.Entities;
 
-[UpdateInGroup(typeof(EventHandlingGroup))]
+[UpdateInGroup(typeof(EventHandlingSystemGroup))]
 public class ResetSystem : ComponentSystem
 {
-	private ComponentGroup eventGroup;
-	private ComponentGroup ballGroup;
+	private EntityQuery eventQuery;
+	private EntityQuery ballQuery;
 
-	protected override void OnCreateManager()
+	protected override void OnCreate()
 	{
-		this.eventGroup = GetComponentGroup(ComponentType.ReadOnly<GameStateChangedEvent>());
-		this.ballGroup = GetComponentGroup(ComponentType.Create<Ball>());
+		this.eventQuery = GetEntityQuery(ComponentType.ReadOnly<GameStateChangedEvent>());
+		this.ballQuery = GetEntityQuery(ComponentType.ReadOnly<Ball>());
+
+		RequireForUpdate(this.eventQuery);
 	}
 
 	protected override void OnUpdate()
 	{
-		ArchetypeChunkComponentType<GameStateChangedEvent> eventType = GetArchetypeChunkComponentType<GameStateChangedEvent>(true);
-
-		using (NativeArray<ArchetypeChunk> chunks = this.eventGroup.CreateArchetypeChunkArray(Allocator.TempJob))
+		using (NativeArray<GameStateChangedEvent> events = this.eventQuery.ToComponentDataArray<GameStateChangedEvent>(Allocator.TempJob))
 		{
-			foreach (ArchetypeChunk chunk in chunks)
+			foreach (GameStateChangedEvent ev in events)
 			{
-				NativeArray<GameStateChangedEvent> events = chunk.GetNativeArray(eventType);
-				foreach (GameStateChangedEvent ev in events)
+				if (ev.NextState == GameState.Ready)
 				{
-					if (ev.NextState == GameState.Ready)
-					{
-						Reset();
-						return;
-					}
+					Reset();
+					return;
 				}
 			}
 		}
@@ -46,6 +42,6 @@ public class ResetSystem : ComponentSystem
 		generator.NextTime = 0f;
 		SetSingleton<BallGenerator>(generator);
 
-		EntityManager.DestroyEntity(this.ballGroup);
+		EntityManager.DestroyEntity(this.ballQuery);
 	}
 }

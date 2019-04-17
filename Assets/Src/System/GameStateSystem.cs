@@ -1,14 +1,14 @@
 using Unity.Collections;
 using Unity.Entities;
 
-[UpdateAfter(typeof(EventHandlingGroup))]
+[UpdateInGroup(typeof(InitializationSystemGroup))]
 public class GameStateSystem : ComponentSystem
 {
-	private ComponentGroup group;
+	private EntityQuery query;
 
-	protected override void OnCreateManager()
+	protected override void OnCreate()
 	{
-		this.group = GetComponentGroup(ComponentType.Create<GameStateChangedEvent>());
+		this.query = GetEntityQuery(typeof(GameStateChangedEvent));
 	}
 
 	protected override void OnUpdate()
@@ -16,13 +16,13 @@ public class GameStateSystem : ComponentSystem
 		ArchetypeChunkEntityType entityType = GetArchetypeChunkEntityType();
 		ArchetypeChunkComponentType<GameStateChangedEvent> eventType = GetArchetypeChunkComponentType<GameStateChangedEvent>(true);
 
-		using (NativeArray<ArchetypeChunk> chunks = this.group.CreateArchetypeChunkArray(Allocator.TempJob))
+		using (NativeArray<ArchetypeChunk> chunks = this.query.CreateArchetypeChunkArray(Allocator.TempJob))
 		{
 			foreach (ArchetypeChunk chunk in chunks)
 			{
 				NativeArray<Entity> entities = chunk.GetNativeArray(entityType);
 				NativeArray<GameStateChangedEvent> events = chunk.GetNativeArray(eventType);
-				
+
 				foreach (GameStateChangedEvent ev in events)
 				{
 					Game game = GetSingleton<Game>();

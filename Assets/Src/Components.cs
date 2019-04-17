@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using Unity.Entities;
 using Unity.Mathematics;
 using UnityEngine;
@@ -45,6 +44,8 @@ public enum Line
 	Right = 1,
 }
 
+public struct Frozen : IComponentData { }
+
 public struct Size : IComponentData
 {
 	public float Height;
@@ -61,6 +62,7 @@ public struct UIPosition : IComponentData
 	public float Y;
 }
 
+[System.Serializable]
 public struct Visual : ISharedComponentData
 {
 	public Mesh Mesh;
@@ -68,16 +70,14 @@ public struct Visual : ISharedComponentData
 	public float2 Scale;
 }
 
-public struct DynamicTextMesh : ISharedComponentData
+[System.Serializable]
+public struct DynamicText : ISharedComponentData
 {
-	public DynamicTextMeshBuilder Builder;
+	public Font Font;
 }
 
-public struct Singleton : IComponentData
-{
-	public Entity Player;
-	public Entity BallPrefab;
-	public Entity ReadyUI;
-	public Entity GameOverUI;
-	public Entity ScoreUI;
-}
+public struct ReadyUI : IComponentData { }
+
+public struct GameOverUI : IComponentData { }
+
+public struct ScoreUI : IComponentData { }

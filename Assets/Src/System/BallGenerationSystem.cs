@@ -1,10 +1,17 @@
 using Unity.Entities;
 using UnityEngine;
 
-[UpdateInGroup(typeof(UpdateGroup))]
+[UpdateInGroup(typeof(UpdateSystemGroup))]
 [UpdateAfter(typeof(BallMotionSystem))]
 public class BallGenerationSystem : ComponentSystem
 {
+	private EntityQuery query;
+
+	protected override void OnCreate()
+	{
+		this.query = GetEntityQuery(ComponentType.ReadOnly<Prefab>(), ComponentType.ReadOnly<Ball>());
+	}
+
 	protected override void OnUpdate()
 	{
 		Game game = GetSingleton<Game>();
@@ -22,7 +29,7 @@ public class BallGenerationSystem : ComponentSystem
 
 	private void Generate(in Game game)
 	{
-		Entity prefab = GetSingleton<Singleton>().BallPrefab;
+		Entity prefab = this.query.GetSingletonEntity();
 
 		Entity entity = EntityManager.Instantiate(prefab);
 		EntityManager.SetComponentData(entity, new Position { X = SelectLine(), Y = 10f });

@@ -1,20 +1,26 @@
 using Unity.Entities;
 
-[UpdateBefore(typeof(RenderGroup))]
+[UpdateInGroup(typeof(PresentationSystemGroup))]
+[UpdateBefore(typeof(RenderSystem))]
 public class ScoreUISystem : ComponentSystem
 {
+	private DynamicTextMeshBuilder builder;
+
+	protected override void OnCreate()
+	{
+		this.builder = new DynamicTextMeshBuilder();
+	}
+
 	protected override void OnUpdate()
 	{
 		Game game = GetSingleton<Game>();
-		Entity scoreUI = GetSingleton<Singleton>().ScoreUI;
-		DynamicTextMesh mesh = EntityManager.GetSharedComponentData<DynamicTextMesh>(scoreUI);
+		Entity scoreUI = GetSingletonEntity<ScoreUI>();
+		Visual visual = EntityManager.GetSharedComponentData<Visual>(scoreUI);
+		DynamicText text = EntityManager.GetSharedComponentData<DynamicText>(scoreUI);
 
-		DynamicTextMeshBuilder builder = mesh.Builder;
-		int score = game.Score;
-
-		builder.Text.Clear();
-		builder.Text.Append("SCORE: ");
-		builder.Text.Append(score);
-		builder.Build();
+		this.builder.Text.Clear();
+		this.builder.Text.Append("SCORE: ");
+		this.builder.Text.Append(game.Score);
+		this.builder.Build(visual.Mesh, text.Font);
 	}
 }

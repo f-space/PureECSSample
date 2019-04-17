@@ -2,16 +2,16 @@ using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Entities;
 
-[UpdateInGroup(typeof(RenderGroup))]
+[UpdateInGroup(typeof(PresentationSystemGroup))]
 public class RenderSystem : ComponentSystem
 {
-	private ComponentGroup group;
+	private EntityQuery query;
 
 	public List<RenderRequest> RenderQueue { get; } = new List<RenderRequest>();
 
-	protected override void OnCreateManager()
+	protected override void OnCreate()
 	{
-		this.group = GetComponentGroup(new EntityArchetypeQuery()
+		this.query = GetEntityQuery(new EntityQueryDesc()
 		{
 			All = new[] { ComponentType.ReadOnly<Visual>() },
 			Any = new[] { ComponentType.ReadOnly<Position>(), ComponentType.ReadOnly<UIPosition>() }
@@ -26,7 +26,7 @@ public class RenderSystem : ComponentSystem
 
 		RenderQueue.Clear();
 
-		using (NativeArray<ArchetypeChunk> chunks = this.group.CreateArchetypeChunkArray(Allocator.TempJob))
+		using (NativeArray<ArchetypeChunk> chunks = this.query.CreateArchetypeChunkArray(Allocator.TempJob))
 		{
 			foreach (ArchetypeChunk chunk in chunks)
 			{

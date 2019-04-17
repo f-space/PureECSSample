@@ -1,7 +1,7 @@
 using Unity.Entities;
 using UnityEngine;
 
-[UpdateInGroup(typeof(UpdateGroup))]
+[UpdateInGroup(typeof(InputHandlingSystemGroup))]
 public class InputSystem : ComponentSystem
 {
 	protected override void OnUpdate()
@@ -25,13 +25,13 @@ public class InputSystem : ComponentSystem
 
 	private void ChangeState(GameState state)
 	{
-		Entity entity = EntityManager.CreateEntity(System.Array.Empty<ComponentType>());
+		Entity entity = EntityManager.CreateEntity();
 		EntityManager.AddComponentData(entity, new GameStateChangedEvent { NextState = state });
 	}
 
 	private void MovePlayer()
 	{
-		Entity player = GetSingleton<Singleton>().Player;
+		Entity player = GetSingletonEntity<Player>();
 		Position position = EntityManager.GetComponentData<Position>(player);
 
 		int sign = 0;

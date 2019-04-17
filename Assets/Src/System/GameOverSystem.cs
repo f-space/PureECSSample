@@ -1,34 +1,34 @@
 using Unity.Collections;
 using Unity.Entities;
 
-[UpdateInGroup(typeof(CollisionGroup))]
-[UpdateAfter(typeof(CollisionSystem))]
+[UpdateInGroup(typeof(EventHandlingSystemGroup))]
 public class GameOverSystem : ComponentSystem
 {
-	private ComponentGroup group;
+	private EntityQuery eventQuery;
 
-	protected override void OnCreateManager()
+	private EntityQuery ballQuery;
+
+	protected override void OnCreate()
 	{
-		this.group = GetComponentGroup(ComponentType.ReadOnly<Ball>(), ComponentType.ReadOnly<Position>());
+		this.eventQuery = GetEntityQuery(ComponentType.ReadOnly<GameStateChangedEvent>());
+		this.ballQuery = GetEntityQuery(new EntityQueryDesc
+		{
+			All = new[] { ComponentType.ReadOnly<Ball>() },
+			None = new[] { ComponentType.ReadWrite<Frozen>() },
+		});
+
+		RequireForUpdate(this.eventQuery);
 	}
 
 	protected override void OnUpdate()
 	{
-		ArchetypeChunkComponentType<Position> positionType = GetArchetypeChunkComponentType<Position>(true);
-
-		using (NativeArray<ArchetypeChunk> chunks = this.group.CreateArchetypeChunkArray(Allocator.TempJob))
+		using (NativeArray<GameStateChangedEvent> events = this.eventQuery.ToComponentDataArray<GameStateChangedEvent>(Allocator.TempJob))
 		{
-			foreach (ArchetypeChunk chunk in chunks)
+			foreach (GameStateChangedEvent ev in events)
 			{
-				NativeArray<Position> positions = chunk.GetNativeArray(positionType);
-				foreach (Position position in positions)
+				if (ev.NextState == GameState.GameOver)
 				{
-					if (position.Y < 0f)
-					{
-						Entity entity = EntityManager.CreateEntity(System.Array.Empty<ComponentType>());
-						EntityManager.AddComponentData(entity, new GameStateChangedEvent { NextState = GameState.GameOver });
-						return;
-					}
+					EntityManager.AddComponent(this.ballQuery, typeof(Frozen));
 				}
 			}
 		}

@@ -1,20 +1,24 @@
 using Unity.Collections;
 using Unity.Entities;
 
-[UpdateInGroup(typeof(CollisionGroup))]
+[UpdateInGroup(typeof(InteractionSystemGroup))]
 public class CollisionSystem : ComponentSystem
 {
-	private ComponentGroup group;
+	private EntityQuery query;
 
-	protected override void OnCreateManager()
+	protected override void OnCreate()
 	{
-		this.group = GetComponentGroup(ComponentType.ReadOnly<Ball>(), ComponentType.ReadOnly<Position>(), ComponentType.ReadOnly<Size>());
+		this.query = GetEntityQuery(new EntityQueryDesc
+		{
+			All = new[] { ComponentType.ReadOnly<Ball>(), ComponentType.ReadOnly<Position>(), ComponentType.ReadOnly<Size>() },
+			None = new[] { ComponentType.ReadWrite<Frozen>() },
+		});
 	}
 
 	protected override void OnUpdate()
 	{
 		Game game = GetSingleton<Game>();
-		Entity player = GetSingleton<Singleton>().Player;
+		Entity player = GetSingletonEntity<Player>();
 		Position playerPosition = EntityManager.GetComponentData<Position>(player);
 		Size playerSize = EntityManager.GetComponentData<Size>(player);
 
@@ -22,7 +26,8 @@ public class CollisionSystem : ComponentSystem
 		ArchetypeChunkComponentType<Position> positionType = GetArchetypeChunkComponentType<Position>();
 		ArchetypeChunkComponentType<Size> sizeType = GetArchetypeChunkComponentType<Size>();
 
-		using (NativeArray<ArchetypeChunk> chunks = this.group.CreateArchetypeChunkArray(Allocator.TempJob))
+		bool gameOver = false;
+		using (NativeArray<ArchetypeChunk> chunks = this.query.CreateArchetypeChunkArray(Allocator.TempJob))
 		{
 			foreach (ArchetypeChunk chunk in chunks)
 			{
@@ -39,8 +44,18 @@ public class CollisionSystem : ComponentSystem
 						game.Score += 1;
 						PostUpdateCommands.DestroyEntity(entities[i]);
 					}
+					else if (position.Y < 0f)
+					{
+						gameOver = true;
+					}
 				}
 			}
+		}
+
+		if (gameOver)
+		{
+			Entity entity = EntityManager.CreateEntity();
+			EntityManager.AddComponentData(entity, new GameStateChangedEvent { NextState = GameState.GameOver });
 		}
 
 		SetSingleton<Game>(game);

@@ -8,11 +8,8 @@ public static class Boot
 	public static void OnLoad()
 	{
 		World world = World.Active;
-		EntityManager manager = world.GetExistingManager<EntityManager>();
-		SystemSwitchingSystem switcher = world.GetExistingManager<SystemSwitchingSystem>();
+		EntityManager manager = world.EntityManager;
 		Font font = ResourceUtility.CreateAsciiFont(48);
-
-		switcher.Switch(GameState.Ready);
 
 		Entity game = manager.CreateEntity(typeof(Game));
 		manager.SetComponentData(game, new Game
@@ -45,7 +42,7 @@ public static class Boot
 		Entity generator = manager.CreateEntity(typeof(BallGenerator));
 		manager.SetComponentData<BallGenerator>(generator, new BallGenerator { NextTime = 0f });
 
-		Entity readyUI = manager.CreateEntity(typeof(Disabled), typeof(UIPosition), typeof(Visual));
+		Entity readyUI = manager.CreateEntity(typeof(ReadyUI), typeof(UIPosition), typeof(Visual));
 		manager.SetComponentData(readyUI, new UIPosition { X = 0f, Y = 4f });
 		manager.SetSharedComponentData(readyUI, new Visual
 		{
@@ -54,7 +51,7 @@ public static class Boot
 			Scale = new float2(1f, 1f),
 		});
 
-		Entity gameoverUI = manager.CreateEntity(typeof(Disabled), typeof(UIPosition), typeof(Visual));
+		Entity gameoverUI = manager.CreateEntity(typeof(GameOverUI), typeof(UIPosition), typeof(Visual));
 		manager.SetComponentData(gameoverUI, new UIPosition { X = 0f, Y = 4f });
 		manager.SetSharedComponentData(gameoverUI, new Visual
 		{
@@ -63,25 +60,14 @@ public static class Boot
 			Scale = new float2(1f, 1f),
 		});
 
-		Entity scoreUI = manager.CreateEntity(typeof(UIPosition), typeof(Visual), typeof(DynamicTextMesh));
-		DynamicTextMeshBuilder scoreBuilder = new DynamicTextMeshBuilder(font);
+		Entity scoreUI = manager.CreateEntity(typeof(ScoreUI), typeof(UIPosition), typeof(Visual), typeof(DynamicText));
 		manager.SetComponentData(scoreUI, new UIPosition { X = 0f, Y = 3f });
 		manager.SetSharedComponentData(scoreUI, new Visual
 		{
-			Mesh = scoreBuilder.Mesh,
+			Mesh = ResourceUtility.CreateDynamicMesh(),
 			Material = font.material,
 			Scale = new float2(0.5f, 0.5f),
 		});
-		manager.SetSharedComponentData(scoreUI, new DynamicTextMesh { Builder = scoreBuilder });
-
-		Entity singleton = manager.CreateEntity(typeof(Singleton));
-		manager.SetComponentData<Singleton>(singleton, new Singleton
-		{
-			Player = player,
-			BallPrefab = ball,
-			ReadyUI = readyUI,
-			GameOverUI = gameoverUI,
-			ScoreUI = scoreUI,
-		});
+		manager.SetSharedComponentData(scoreUI, new DynamicText { Font = font });
 	}
 }

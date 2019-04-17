@@ -77,6 +77,13 @@ public static class ResourceUtility
 		return mesh;
 	}
 
+	public static Mesh CreateDynamicMesh()
+	{
+		Mesh mesh = new Mesh();
+		mesh.MarkDynamic();
+		return mesh;
+	}
+
 	public static void BuildTextMesh(Font font, StringBuilder text, List<Vector3> vertices, List<Vector2> uvs, List<int> triangles)
 	{
 		vertices.Capacity = Mathf.Max(vertices.Capacity, text.Length * 4);

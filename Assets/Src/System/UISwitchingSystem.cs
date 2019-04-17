@@ -1,43 +1,41 @@
 using Unity.Entities;
 
-[UpdateInGroup(typeof(UpdateGroup))]
+[UpdateInGroup(typeof(PresentationSystemGroup))]
+[UpdateBefore(typeof(RenderSystem))]
 public class UISwitchingSystem : ComponentSystem
 {
+	private EntityQuery visibleReadyUIQuery, invisibleReadyUIQuery;
+
+	private EntityQuery visibleGameOverUIQuery, invisibleGameOverUIQuery;
+
+	protected override void OnCreate()
+	{
+		this.visibleReadyUIQuery = GetEntityQuery(ComponentType.ReadOnly<ReadyUI>());
+		this.invisibleReadyUIQuery = GetEntityQuery(ComponentType.ReadOnly<ReadyUI>(), ComponentType.ReadOnly<Disabled>());
+		this.visibleGameOverUIQuery = GetEntityQuery(ComponentType.ReadOnly<GameOverUI>());
+		this.invisibleGameOverUIQuery = GetEntityQuery(ComponentType.ReadOnly<GameOverUI>(), ComponentType.ReadOnly<Disabled>());
+	}
+
 	protected override void OnUpdate()
 	{
 		Game game = GetSingleton<Game>();
-		Singleton singleton = GetSingleton<Singleton>();
 
-		GameState state = game.State;
-
-		if (EntityManager.HasComponent<Disabled>(singleton.ReadyUI))
+		if (game.State == GameState.Ready)
 		{
-			if (state == GameState.Ready)
-			{
-				EntityManager.RemoveComponent(singleton.ReadyUI, typeof(Disabled));
-			}
+			EntityManager.RemoveComponent(invisibleReadyUIQuery, typeof(Disabled));
 		}
 		else
 		{
-			if (state != GameState.Ready)
-			{
-				EntityManager.AddComponent(singleton.ReadyUI, typeof(Disabled));
-			}
+			EntityManager.AddComponent(visibleReadyUIQuery, typeof(Disabled));
 		}
 
-		if (EntityManager.HasComponent<Disabled>(singleton.GameOverUI))
+		if (game.State == GameState.GameOver)
 		{
-			if (state == GameState.GameOver)
-			{
-				EntityManager.RemoveComponent(singleton.GameOverUI, typeof(Disabled));
-			}
+			EntityManager.RemoveComponent(invisibleGameOverUIQuery, typeof(Disabled));
 		}
 		else
 		{
-			if (state != GameState.GameOver)
-			{
-				EntityManager.AddComponent(singleton.GameOverUI, typeof(Disabled));
-			}
+			EntityManager.AddComponent(visibleGameOverUIQuery, typeof(Disabled));
 		}
 	}
 }
