@@ -1,10 +1,6 @@
 using Unity.Entities;
 
 [UpdateInGroup(typeof(SimulationSystemGroup))]
-[UpdateBefore(typeof(UpdateSystemGroup))]
-public class InputHandlingSystemGroup : ComponentSystemGroup { }
-
-[UpdateInGroup(typeof(SimulationSystemGroup))]
 public class UpdateSystemGroup : ComponentSystemGroup { }
 
 [UpdateInGroup(typeof(SimulationSystemGroup))]

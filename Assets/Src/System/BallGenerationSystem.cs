@@ -1,5 +1,7 @@
 using Unity.Entities;
-using UnityEngine;
+using Unity.Mathematics;
+
+using static Unity.Mathematics.math;
 
 [UpdateInGroup(typeof(UpdateSystemGroup))]
 [UpdateAfter(typeof(BallMotionSystem))]
@@ -9,36 +11,41 @@ public class BallGenerationSystem : ComponentSystem
 
 	protected override void OnCreate()
 	{
-		this.query = GetEntityQuery(ComponentType.ReadOnly<Prefab>(), ComponentType.ReadOnly<Ball>());
+		this.query = Entities.WithAllReadOnly<Prefab, Ball>().ToEntityQuery();
+
+		RequireSingletonForUpdate<BallGenerator>();
 	}
 
 	protected override void OnUpdate()
 	{
-		Game game = GetSingleton<Game>();
 		BallGenerator generator = GetSingleton<BallGenerator>();
 
-		if (generator.NextTime < game.TotalTime)
+		if (generator.NextTime < UnityEngine.Time.time)
 		{
-			Generate(game);
+			Score score = GetSingleton<Score>();
+			Position position = new Position { X = RandomLine(ref generator.Random), Y = 10f };
+			Velocity velocity = new Velocity { Y = sqrt(score.Value / 10f + 1) * -3f };
 
-			generator.NextTime += Mathf.Exp(-game.Score / 10f) * 3f + 0.5f;
+			Generate(position, velocity);
+
+			generator.NextTime += exp(-score.Value / 10f) * 3f + 0.5f;
 
 			SetSingleton<BallGenerator>(generator);
 		}
 	}
 
-	private void Generate(in Game game)
+	private void Generate(Position position, Velocity velocity)
 	{
 		Entity prefab = this.query.GetSingletonEntity();
 
 		Entity entity = EntityManager.Instantiate(prefab);
-		EntityManager.SetComponentData(entity, new Position { X = SelectLine(), Y = 10f });
-		EntityManager.SetComponentData(entity, new Velocity { Y = Mathf.Sqrt(game.Score / 10f + 1) * -3f });
+		EntityManager.SetComponentData(entity, position);
+		EntityManager.SetComponentData(entity, velocity);
 	}
 
-	private Line SelectLine()
+	private Line RandomLine(ref Random random)
 	{
-		switch (Random.Range(0, 3))
+		switch (random.NextInt(3))
 		{
 			case 0: return Line.Left;
 			case 1: return Line.Center;

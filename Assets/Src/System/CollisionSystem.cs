@@ -1,63 +1,43 @@
-using Unity.Collections;
 using Unity.Entities;
 
 [UpdateInGroup(typeof(InteractionSystemGroup))]
 public class CollisionSystem : ComponentSystem
 {
-	private EntityQuery query;
+	private EntityQuery ballQuery;
 
 	protected override void OnCreate()
 	{
-		this.query = GetEntityQuery(new EntityQueryDesc
-		{
-			All = new[] { ComponentType.ReadOnly<Ball>(), ComponentType.ReadOnly<Position>(), ComponentType.ReadOnly<Size>() },
-			None = new[] { ComponentType.ReadWrite<Frozen>() },
-		});
+		this.ballQuery = Entities
+			.WithAllReadOnly<Ball, Position, HitBoxSize>()
+			.WithNone<Frozen>()
+			.ToEntityQuery();
+
+		RequireForUpdate(this.ballQuery);
 	}
 
 	protected override void OnUpdate()
 	{
-		Game game = GetSingleton<Game>();
+		Score score = GetSingleton<Score>();
 		Entity player = GetSingletonEntity<Player>();
 		Position playerPosition = EntityManager.GetComponentData<Position>(player);
-		Size playerSize = EntityManager.GetComponentData<Size>(player);
-
-		ArchetypeChunkEntityType entityType = GetArchetypeChunkEntityType();
-		ArchetypeChunkComponentType<Position> positionType = GetArchetypeChunkComponentType<Position>();
-		ArchetypeChunkComponentType<Size> sizeType = GetArchetypeChunkComponentType<Size>();
-
+		HitBoxSize playerSize = EntityManager.GetComponentData<HitBoxSize>(player);
 		bool gameOver = false;
-		using (NativeArray<ArchetypeChunk> chunks = this.query.CreateArchetypeChunkArray(Allocator.TempJob))
+
+		Entities.With(this.ballQuery).ForEach((Entity entity, ref Position position, ref HitBoxSize size) =>
 		{
-			foreach (ArchetypeChunk chunk in chunks)
+			if (position.X == playerPosition.X && position.Y - size.Height / 2f < playerPosition.Y + playerSize.Height / 2f)
 			{
-				NativeArray<Entity> entities = chunk.GetNativeArray(entityType);
-				NativeArray<Position> positions = chunk.GetNativeArray(positionType);
-				NativeArray<Size> sizes = chunk.GetNativeArray(sizeType);
-
-				for (int i = 0; i < entities.Length; i++)
-				{
-					Position position = positions[i];
-					Size size = sizes[i];
-					if (position.X == playerPosition.X && position.Y - size.Height / 2f < playerPosition.Y + playerSize.Height / 2f)
-					{
-						game.Score += 1;
-						PostUpdateCommands.DestroyEntity(entities[i]);
-					}
-					else if (position.Y < 0f)
-					{
-						gameOver = true;
-					}
-				}
+				score.Value += 1;
+				EntityManager.DestroyEntity(entity);
 			}
-		}
+			else if (position.Y < 0f)
+			{
+				gameOver = true;
+			}
+		});
 
-		if (gameOver)
-		{
-			Entity entity = EntityManager.CreateEntity();
-			EntityManager.AddComponentData(entity, new GameStateChangedEvent { NextState = GameState.GameOver });
-		}
+		SetSingleton<Score>(score);
 
-		SetSingleton<Game>(game);
+		if (gameOver) EntityManager.CreateEntity(typeof(GameOverEvent));
 	}
 }

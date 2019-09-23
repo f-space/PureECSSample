@@ -1,13 +1,9 @@
 using Unity.Entities;
 using Unity.Mathematics;
-using UnityEngine;
 
 public struct Game : IComponentData
 {
 	public GameState State;
-	public float TotalTime;
-	public float ElapsedTime;
-	public int Score;
 }
 
 public enum GameState
@@ -17,14 +13,22 @@ public enum GameState
 	GameOver,
 }
 
-public struct GameStateChangedEvent : IComponentData
-{
-	public GameState NextState;
-}
+public struct GameStartEvent : IComponentData { }
+
+public struct GameOverEvent : IComponentData { }
+
+public struct ResetEvent : IComponentData { }
 
 public struct Player : IComponentData { }
 
 public struct Ball : IComponentData { }
+
+public enum Line
+{
+	Left,
+	Center,
+	Right,
+}
 
 public struct Position : IComponentData
 {
@@ -37,47 +41,46 @@ public struct Velocity : IComponentData
 	public float Y;
 }
 
-public enum Line
-{
-	Left = -1,
-	Center = 0,
-	Right = 1,
-}
-
 public struct Frozen : IComponentData { }
 
-public struct Size : IComponentData
+public struct HitBoxSize : IComponentData
 {
 	public float Height;
 }
 
 public struct BallGenerator : IComponentData
 {
+	public Random Random;
 	public float NextTime;
 }
 
-public struct UIPosition : IComponentData
+public struct VisibleWhile : IComponentData
 {
-	public float X;
-	public float Y;
+	public GameState State;
+}
+
+public struct Score : IComponentData
+{
+	public int Value;
 }
 
 [System.Serializable]
-public struct Visual : ISharedComponentData
+public struct Visual : ISharedComponentData, System.IEquatable<Visual>
 {
-	public Mesh Mesh;
-	public Material Material;
-	public float2 Scale;
+	public UnityEngine.Mesh Mesh;
+	public UnityEngine.Material Material;
+
+	public bool Equals(Visual other) => this.Mesh == other.Mesh && this.Material == other.Material;
+	public override bool Equals(object obj) => (obj is Visual other) && this.Equals(other);
+	public override int GetHashCode() => this.Mesh.GetHashCode() ^ this.Material.GetHashCode();
 }
 
 [System.Serializable]
-public struct DynamicText : ISharedComponentData
+public struct WithFont : ISharedComponentData, System.IEquatable<WithFont>
 {
-	public Font Font;
+	public UnityEngine.Font Font;
+
+	public bool Equals(WithFont other) => this.Font == other.Font;
+	public override bool Equals(object obj) => (obj is WithFont other) && this.Equals(other);
+	public override int GetHashCode() => this.Font.GetHashCode();
 }
-
-public struct ReadyUI : IComponentData { }
-
-public struct GameOverUI : IComponentData { }
-
-public struct ScoreUI : IComponentData { }

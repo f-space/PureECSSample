@@ -1,30 +1,28 @@
-using Unity.Entities;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 
 [CreateAssetMenu(menuName = nameof(ECSRenderPipeline))]
 public class ECSRenderPipelineAsset : RenderPipelineAsset
 {
-	protected override RenderPipeline CreatePipeline()
-	{
-		return new ECSRenderPipeline();
-	}
+	protected override RenderPipeline CreatePipeline() => new ECSRenderPipeline();
 }
 
 public struct RenderRequest
 {
 	public Mesh Mesh;
 	public Material Material;
-	public Vector2 Scale;
-	public Vector2 Position;
+	public Matrix4x4 WorldMatrix;
 }
 
-class ECSRenderPipeline : RenderPipeline
+public class ECSRenderPipeline : RenderPipeline
 {
 	private const float AspectRatio = 10f / 16f;
 	private const float Width = 5f;
 	private const float Height = Width / AspectRatio;
 	private const float Baseline = 0.9f;
+
+	public readonly List<RenderRequest> Queue = new List<RenderRequest>();
 
 	private CommandBuffer commands = new CommandBuffer();
 
@@ -39,18 +37,9 @@ class ECSRenderPipeline : RenderPipeline
 		commands.SetProjectionMatrix(projection);
 		commands.SetViewport(viewport);
 
-		World world = World.Active;
-		if (world != null)
+		foreach (RenderRequest request in Queue)
 		{
-			RenderSystem system = world.GetExistingSystem<RenderSystem>();
-
-			foreach (RenderRequest request in system.RenderQueue)
-			{
-				Vector3 position = new Vector3(request.Position.x, request.Position.y, 0f);
-				Vector3 scale = new Vector3(request.Scale.x, request.Scale.y, 1f);
-				Matrix4x4 matrix = Matrix4x4.TRS(position, Quaternion.identity, scale);
-				commands.DrawMesh(request.Mesh, matrix, request.Material);
-			}
+			commands.DrawMesh(request.Mesh, request.WorldMatrix, request.Material);
 		}
 
 		context.ExecuteCommandBuffer(commands);

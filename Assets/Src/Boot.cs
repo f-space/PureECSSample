@@ -1,5 +1,6 @@
 using Unity.Entities;
 using Unity.Mathematics;
+using Unity.Transforms;
 using UnityEngine;
 
 public static class Boot
@@ -15,59 +16,89 @@ public static class Boot
 		manager.SetComponentData(game, new Game
 		{
 			State = GameState.Ready,
-			TotalTime = 0f,
-			ElapsedTime = 0f,
-			Score = 0,
 		});
 
-		Entity player = manager.CreateEntity(typeof(Player), typeof(Position), typeof(Size), typeof(Visual));
+		Entity player = manager.CreateEntity(
+			typeof(Player),
+			typeof(Position),
+			typeof(HitBoxSize),
+			typeof(Visual),
+			typeof(LocalToWorld),
+			typeof(Translation),
+			typeof(NonUniformScale)
+		);
 		manager.SetComponentData(player, new Position { X = Line.Center, Y = 0f });
-		manager.SetComponentData(player, new Size { Height = 0.5f });
+		manager.SetComponentData(player, new HitBoxSize { Height = 0.5f });
 		manager.SetSharedComponentData(player, new Visual
 		{
 			Mesh = ResourceUtility.CreateQuad(),
 			Material = ResourceUtility.CreateMaterial(Color.white),
-			Scale = new float2(1f, 0.25f),
 		});
+		manager.SetComponentData(player, new NonUniformScale { Value = new float3(1f, 0.25f, 1f) });
 
-		Entity ball = manager.CreateEntity(typeof(Prefab), typeof(Ball), typeof(Position), typeof(Velocity), typeof(Size), typeof(Visual));
-		manager.SetComponentData(ball, new Size { Height = 0.5f });
+		Entity ball = manager.CreateEntity(
+			typeof(Prefab),
+			typeof(Ball),
+			typeof(Position),
+			typeof(Velocity),
+			typeof(HitBoxSize),
+			typeof(Visual),
+			typeof(LocalToWorld),
+			typeof(Translation),
+			typeof(Scale)
+		);
+		manager.SetComponentData(ball, new HitBoxSize { Height = 0.5f });
 		manager.SetSharedComponentData(ball, new Visual
 		{
 			Mesh = ResourceUtility.CreateCircle(),
 			Material = ResourceUtility.CreateMaterial(Color.white),
-			Scale = new float2(0.5f, 0.5f),
 		});
+		manager.SetComponentData(ball, new Scale { Value = 0.5f });
 
-		Entity generator = manager.CreateEntity(typeof(BallGenerator));
-		manager.SetComponentData<BallGenerator>(generator, new BallGenerator { NextTime = 0f });
-
-		Entity readyUI = manager.CreateEntity(typeof(ReadyUI), typeof(UIPosition), typeof(Visual));
-		manager.SetComponentData(readyUI, new UIPosition { X = 0f, Y = 4f });
+		Entity readyUI = manager.CreateEntity(
+			typeof(Visual),
+			typeof(VisibleWhile),
+			typeof(LocalToWorld),
+			typeof(Translation)
+		);
 		manager.SetSharedComponentData(readyUI, new Visual
 		{
 			Mesh = ResourceUtility.CreateTextMesh(font, "Ready?"),
 			Material = font.material,
-			Scale = new float2(1f, 1f),
 		});
+		manager.SetComponentData(readyUI, new VisibleWhile { State = GameState.Ready });
+		manager.SetComponentData(readyUI, new Translation { Value = new float3(0f, 4f, 0f) });
 
-		Entity gameoverUI = manager.CreateEntity(typeof(GameOverUI), typeof(UIPosition), typeof(Visual));
-		manager.SetComponentData(gameoverUI, new UIPosition { X = 0f, Y = 4f });
+		Entity gameoverUI = manager.CreateEntity(
+			typeof(Visual),
+			typeof(VisibleWhile),
+			typeof(LocalToWorld),
+			typeof(Translation)
+		);
 		manager.SetSharedComponentData(gameoverUI, new Visual
 		{
 			Mesh = ResourceUtility.CreateTextMesh(font, "Game Over"),
 			Material = font.material,
-			Scale = new float2(1f, 1f),
 		});
+		manager.SetComponentData(gameoverUI, new VisibleWhile { State = GameState.GameOver });
+		manager.SetComponentData(gameoverUI, new Translation { Value = new float3(0f, 4f, 0f) });
 
-		Entity scoreUI = manager.CreateEntity(typeof(ScoreUI), typeof(UIPosition), typeof(Visual), typeof(DynamicText));
-		manager.SetComponentData(scoreUI, new UIPosition { X = 0f, Y = 3f });
+		Entity scoreUI = manager.CreateEntity(
+			typeof(Score),
+			typeof(Visual),
+			typeof(WithFont),
+			typeof(LocalToWorld),
+			typeof(Translation),
+			typeof(Scale)
+		);
+		manager.SetComponentData(scoreUI, new Score { Value = 0 });
 		manager.SetSharedComponentData(scoreUI, new Visual
 		{
 			Mesh = ResourceUtility.CreateDynamicMesh(),
 			Material = font.material,
-			Scale = new float2(0.5f, 0.5f),
 		});
-		manager.SetSharedComponentData(scoreUI, new DynamicText { Font = font });
+		manager.SetSharedComponentData(scoreUI, new WithFont { Font = font });
+		manager.SetComponentData(scoreUI, new Translation { Value = new float3(0f, 3f, 0f) });
+		manager.SetComponentData(scoreUI, new Scale { Value = 0.5f });
 	}
 }
