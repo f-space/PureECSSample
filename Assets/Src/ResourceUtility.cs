@@ -126,6 +126,4 @@ public static class ResourceUtility
 			vertices[i] = matrix * new Vector4(vertices[i].x, vertices[i].y, vertices[i].z, 1f);
 		}
 	}
-
-
 }

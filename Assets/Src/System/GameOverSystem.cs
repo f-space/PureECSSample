@@ -1,30 +1,47 @@
+using Unity.Collections;
 using Unity.Entities;
 
-[UpdateInGroup(typeof(EventHandlingSystemGroup))]
-public class GameOverSystem : ComponentSystem
+[UpdateInGroup(typeof(UpdateSystemGroup), OrderLast = true)]
+public class GameOverSystem : SystemBase
 {
-	private EntityQuery eventQuery;
-
 	private EntityQuery ballQuery;
+
+	private EntityCommandBufferSystem ecbSystem;
 
 	protected override void OnCreate()
 	{
-		this.eventQuery = GetEntityQuery(typeof(GameOverEvent));
-		this.ballQuery = GetEntityQuery(ComponentType.ReadOnly<Ball>());
+		this.ecbSystem = World.GetExistingSystem<EndSimulationEntityCommandBufferSystem>();
 
-		RequireForUpdate(this.eventQuery);
+		RequireForUpdate(this.ballQuery);
 	}
 
 	protected override void OnUpdate()
 	{
-		Game game = GetSingleton<Game>();
-		game.State = GameState.GameOver;
-		SetSingleton<Game>(game);
+		Entity gameEntity = GetSingletonEntity<Game>();
+		Entity ganeratorEntity = GetSingletonEntity<BallGenerator>();
 
-		EntityManager.DestroyEntity(GetSingletonEntity<BallGenerator>());
-		
-		EntityManager.AddComponent(this.ballQuery, typeof(Frozen));
+		EntityCommandBuffer ecb = this.ecbSystem.CreateCommandBuffer();
 
-		EntityManager.DestroyEntity(this.eventQuery);
+		NativeArray<bool> gameOver = new NativeArray<bool>(1, Allocator.TempJob);
+
+		Entities
+			.WithAll<Ball, Active>()
+			.ForEach((in Position position) => { if (position.Y < 0f) gameOver[0] = true; })
+			.WithStoreEntityQueryInField(ref this.ballQuery)
+			.Schedule();
+
+		Job
+			.WithCode(() =>
+			{
+				if (gameOver[0])
+				{
+					ecb.DestroyEntity(ganeratorEntity);
+					SetComponent(gameEntity, new Game { Phase = GamePhase.GameOver });
+				}
+			})
+			.WithDeallocateOnJobCompletion(gameOver)
+			.Schedule();
+
+		this.ecbSystem.AddJobHandleForProducer(this.Dependency);
 	}
 }

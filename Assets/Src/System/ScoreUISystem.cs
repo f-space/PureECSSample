@@ -2,29 +2,26 @@ using Unity.Entities;
 
 [UpdateInGroup(typeof(PresentationSystemGroup))]
 [UpdateBefore(typeof(RenderSystem))]
-public class ScoreUISystem : ComponentSystem
+public class ScoreUISystem : SystemBase
 {
-	private EntityQuery query;
-
-	private DynamicTextMeshBuilder builder;
-
-	protected override void OnCreate()
-	{
-		this.query = Entities.WithAllReadOnly<Score, WithFont>().WithAll<Visual>().ToEntityQuery();
-
-		this.builder = new DynamicTextMeshBuilder();
-	}
+	private DynamicTextMeshBuilder builder = new DynamicTextMeshBuilder();
 
 	protected override void OnUpdate()
 	{
-		Entity entity = query.GetSingletonEntity();
-		Score score = EntityManager.GetComponentData<Score>(entity);
-		Visual visual = EntityManager.GetSharedComponentData<Visual>(entity);
-		WithFont font = EntityManager.GetSharedComponentData<WithFont>(entity);
+		DynamicTextMeshBuilder builder = this.builder;
 
-		this.builder.Text.Clear();
-		this.builder.Text.Append("SCORE: ");
-		this.builder.Text.Append(score.Value);
-		this.builder.Build(visual.Mesh, font.Font);
+		Score score = GetSingleton<Score>();
+
+		Entities
+			.WithAll<ScoreUI>()
+			.ForEach((in DynamicText dyn, in Visual visual) =>
+			{
+				builder.Text.Clear();
+				builder.Text.Append("SCORE: ");
+				builder.Text.Append(score.Value);
+				builder.Build(visual.Mesh, dyn.Font);
+			})
+			.WithoutBurst()
+			.Run();
 	}
 }

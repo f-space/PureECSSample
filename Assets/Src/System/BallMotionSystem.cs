@@ -1,16 +1,18 @@
 using Unity.Entities;
 
 [UpdateInGroup(typeof(UpdateSystemGroup))]
-public class BallMotionSystem : ComponentSystem
+public class BallMotionSystem : SystemBase
 {
 	protected override void OnUpdate()
 	{
+		float deltaTime = World.Time.DeltaTime;
+
 		Entities
-			.WithAllReadOnly<Ball, Velocity>()
-			.WithNone<Frozen>()
-			.ForEach((ref Position position, ref Velocity velocity) =>
+			.WithAll<Ball, Active>()
+			.ForEach((ref Position position, in Velocity velocity) =>
 			{
-				position.Y += velocity.Y * UnityEngine.Time.deltaTime;
-			});
+				position.Y += velocity.Y * deltaTime;
+			})
+			.Schedule();
 	}
 }

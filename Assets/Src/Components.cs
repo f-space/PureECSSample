@@ -3,21 +3,22 @@ using Unity.Mathematics;
 
 public struct Game : IComponentData
 {
-	public GameState State;
+	public GamePhase Phase;
 }
 
-public enum GameState
+public struct Score : IComponentData
+{
+	public int Value;
+}
+
+public enum GamePhase
 {
 	Ready,
 	Playing,
 	GameOver,
 }
 
-public struct GameStartEvent : IComponentData { }
-
-public struct GameOverEvent : IComponentData { }
-
-public struct ResetEvent : IComponentData { }
+public struct Active : IComponentData { }
 
 public struct Player : IComponentData { }
 
@@ -41,8 +42,6 @@ public struct Velocity : IComponentData
 	public float Y;
 }
 
-public struct Frozen : IComponentData { }
-
 public struct HitBoxSize : IComponentData
 {
 	public float Height;
@@ -56,12 +55,19 @@ public struct BallGenerator : IComponentData
 
 public struct VisibleWhile : IComponentData
 {
-	public GameState State;
+	public GamePhase Phase;
 }
 
-public struct Score : IComponentData
+public struct ScoreUI : IComponentData { }
+
+public struct Camera : IComponentData
 {
-	public int Value;
+	public float Left;
+	public float Right;
+	public float Bottom;
+	public float Top;
+	public float Near;
+	public float Far;
 }
 
 [System.Serializable]
@@ -76,11 +82,11 @@ public struct Visual : ISharedComponentData, System.IEquatable<Visual>
 }
 
 [System.Serializable]
-public struct WithFont : ISharedComponentData, System.IEquatable<WithFont>
+public struct DynamicText : ISharedComponentData, System.IEquatable<DynamicText>
 {
 	public UnityEngine.Font Font;
 
-	public bool Equals(WithFont other) => this.Font == other.Font;
-	public override bool Equals(object obj) => (obj is WithFont other) && this.Equals(other);
+	public bool Equals(DynamicText other) => this.Font == other.Font;
+	public override bool Equals(object obj) => (obj is DynamicText other) && this.Equals(other);
 	public override int GetHashCode() => this.Font.GetHashCode();
 }

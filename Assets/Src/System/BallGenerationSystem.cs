@@ -1,56 +1,79 @@
 using Unity.Entities;
 using Unity.Mathematics;
 
+using static Unity.Entities.ComponentType;
 using static Unity.Mathematics.math;
 
 [UpdateInGroup(typeof(UpdateSystemGroup))]
-[UpdateAfter(typeof(BallMotionSystem))]
-public class BallGenerationSystem : ComponentSystem
+public class BallGenerationSystem : SystemBase
 {
-	private EntityQuery query;
+	private struct GenResult
+	{
+		public Position Position;
+		public Velocity Velocity;
+		public float NextInterval;
+	}
+
+	private EntityQuery ballPrefabQuery;
+
+	private EntityCommandBufferSystem ecbSystem;
 
 	protected override void OnCreate()
 	{
-		this.query = Entities.WithAllReadOnly<Prefab, Ball>().ToEntityQuery();
+		this.ballPrefabQuery = GetEntityQuery(ReadOnly<Prefab>(), ReadOnly<Ball>());
+		this.ecbSystem = World.GetExistingSystem<EndSimulationEntityCommandBufferSystem>();
 
 		RequireSingletonForUpdate<BallGenerator>();
 	}
 
 	protected override void OnUpdate()
 	{
-		BallGenerator generator = GetSingleton<BallGenerator>();
+		Entity prefab = this.ballPrefabQuery.GetSingletonEntity();
+		Score score = GetSingleton<Score>();
+		float time = (float)Time.ElapsedTime;
 
-		if (generator.NextTime < UnityEngine.Time.time)
+		EntityCommandBuffer ecb = this.ecbSystem.CreateCommandBuffer();
+
+		Entities.ForEach((ref BallGenerator gen) =>
 		{
-			Score score = GetSingleton<Score>();
-			Position position = new Position { X = RandomLine(ref generator.Random), Y = 10f };
-			Velocity velocity = new Velocity { Y = sqrt(score.Value / 10f + 1) * -3f };
+			if (gen.NextTime < time)
+			{
+				GenResult result = Generate(ref gen.Random, score.Value);
 
-			Generate(position, velocity);
+				Entity entity = ecb.Instantiate(prefab);
+				ecb.SetComponent(entity, result.Position);
+				ecb.SetComponent(entity, result.Velocity);
 
-			generator.NextTime += exp(-score.Value / 10f) * 3f + 0.5f;
+				gen.NextTime += result.NextInterval;
+			}
+		}).Schedule();
 
-			SetSingleton<BallGenerator>(generator);
-		}
+		this.ecbSystem.AddJobHandleForProducer(this.Dependency);
 	}
 
-	private void Generate(Position position, Velocity velocity)
+	private static GenResult Generate(ref Random random, int score)
 	{
-		Entity prefab = this.query.GetSingletonEntity();
+		Line x = RandomLine(ref random);
+		float y = 10f;
+		float v = sqrt(score / 10f + 1f) * -3f;
+		float t = exp(-score / 10f) * 3f + 0.5f;
 
-		Entity entity = EntityManager.Instantiate(prefab);
-		EntityManager.SetComponentData(entity, position);
-		EntityManager.SetComponentData(entity, velocity);
+		return new GenResult
+		{
+			Position = new Position { X = x, Y = y },
+			Velocity = new Velocity { Y = v },
+			NextInterval = t,
+		};
 	}
 
-	private Line RandomLine(ref Random random)
+	private static Line RandomLine(ref Random random)
 	{
 		switch (random.NextInt(3))
 		{
 			case 0: return Line.Left;
 			case 1: return Line.Center;
 			case 2: return Line.Right;
-			default: throw new System.InvalidOperationException("unreachable code.");
+			default: throw new System.InvalidOperationException("unreachable code");
 		}
 	}
 }

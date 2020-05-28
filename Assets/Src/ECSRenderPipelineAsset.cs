@@ -17,25 +17,23 @@ public struct RenderRequest
 
 public class ECSRenderPipeline : RenderPipeline
 {
-	private const float AspectRatio = 10f / 16f;
-	private const float Width = 5f;
-	private const float Height = Width / AspectRatio;
-	private const float Baseline = 0.9f;
-
 	public readonly List<RenderRequest> Queue = new List<RenderRequest>();
+
+	public Matrix4x4 ViewMatrix { get; set;} = Matrix4x4.identity;
+
+	public Matrix4x4 ProjectionMatrix { get; set; } = Matrix4x4.identity;
+
+	public Rect Viewport { get; set; } = Rect.zero;
 
 	private CommandBuffer commands = new CommandBuffer();
 
-	protected override void Render(ScriptableRenderContext context, Camera[] cameras)
+	protected override void Render(ScriptableRenderContext context, UnityEngine.Camera[] _)
 	{
-		CalculateProjection(out Matrix4x4 projection);
-		CalculateViewportRect(out Rect viewport);
-
 		commands.Clear();
 		commands.ClearRenderTarget(true, true, Color.black);
-		commands.SetViewMatrix(Matrix4x4.identity);
-		commands.SetProjectionMatrix(projection);
-		commands.SetViewport(viewport);
+		commands.SetViewMatrix(ViewMatrix);
+		commands.SetProjectionMatrix(ProjectionMatrix);
+		commands.SetViewport(Viewport);
 
 		foreach (RenderRequest request in Queue)
 		{
@@ -44,25 +42,5 @@ public class ECSRenderPipeline : RenderPipeline
 
 		context.ExecuteCommandBuffer(commands);
 		context.Submit();
-	}
-
-	private void CalculateProjection(out Matrix4x4 projection)
-	{
-		float left = -Width / 2f;
-		float right = Width / 2f;
-		float bottom = -Height * (1f - Baseline);
-		float top = Height * Baseline;
-
-		projection = Matrix4x4.Ortho(left, right, bottom, top, 0f, 1f);
-	}
-
-	private void CalculateViewportRect(out Rect rect)
-	{
-		float height = Screen.height;
-		float width = height * AspectRatio;
-		float x = (Screen.width - width) / 2f;
-		float y = 0;
-
-		rect = new Rect(x, y, width, height);
 	}
 }

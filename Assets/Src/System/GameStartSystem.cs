@@ -1,31 +1,35 @@
 using Unity.Entities;
 using Unity.Mathematics;
+using UnityEngine.InputSystem;
 
-[UpdateInGroup(typeof(EventHandlingSystemGroup))]
-public class GameStartSystem : ComponentSystem
+[UpdateInGroup(typeof(InputSystemGroup))]
+public class GameStartSystem : SystemBase
 {
-	private EntityQuery eventQuery;
-
-	protected override void OnCreate()
-	{
-		this.eventQuery = GetEntityQuery(typeof(GameStartEvent));
-
-		RequireForUpdate(this.eventQuery);
-	}
-
 	protected override void OnUpdate()
 	{
 		Game game = GetSingleton<Game>();
-		game.State = GameState.Playing;
-		SetSingleton<Game>(game);
-
-		Entity generator = EntityManager.CreateEntity(typeof(BallGenerator));
-		EntityManager.SetComponentData(generator, new BallGenerator
+		if (game.Phase == GamePhase.Ready)
 		{
-			Random = new Random((uint)UnityEngine.Time.frameCount),
-			NextTime = UnityEngine.Time.time,
-		});
+			Keyboard keyboard = Keyboard.current;
+			if (keyboard != null && keyboard.enterKey.wasPressedThisFrame)
+			{
+				CreateBallGenerator();
 
-		EntityManager.DestroyEntity(this.eventQuery);
+				SetSingleton(new Game { Phase = GamePhase.Playing });
+			}
+		}
+	}
+
+	private void CreateBallGenerator()
+	{
+		float time = (float)Time.ElapsedTime;
+		uint seed = System.BitConverter.ToUInt32(System.BitConverter.GetBytes(time), 0);
+
+		Entity entity = EntityManager.CreateEntity(typeof(BallGenerator));
+		SetComponent(entity, new BallGenerator
+		{
+			Random = new Random(seed),
+			NextTime = time,
+		});
 	}
 }
